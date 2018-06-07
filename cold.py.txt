@@ -1,0 +1,53 @@
+
+
+from boa.interop.Neo.Runtime import CheckWitness, Log
+from boa.interop.Neo.Storage import GetContext, Put, Delete, Get
+from boa.builtins import concat
+
+
+# Main Operation
+
+def Main(operation, args):
+
+   
+   
+    user_hash = args[0]
+    domain = args[1]
+    domain_owner_key = concat(domain, ".owner")
+    domain_target_key = concat(domain, ".target")
+    owner = b'#\xba\'\x03\xc52c\xe8\xd6\xe5"\xdc2 39\xdc\xd8\xee\xe9'
+
+
+    if operation == 'GetDomain':
+        return Get(GetContext(), domain_target_key)
+
+   
+    authorized = CheckWitness(user_hash)
+    if not authorized:
+        Log("Not Authorized")
+        return False
+    Log("Authorized")
+
+    if operation == 'RegisterDomain':
+        if(CheckWitness(owner)):
+            address = args[2]
+            Put(GetContext(), domain_owner_key, address)
+            if len(args) == 4:
+                target = args[3]
+                Put(GetContext(), domain_target_key, target)
+            return True
+
+    if operation == 'SetDomainTarget':
+        if CheckWitness(domain_owner_key) or CheckWitness(owner):
+            # License the product
+            target = args[2]
+            Put(GetContext(), domain_target_key, target)
+            return True
+
+    if operation == 'DeleteDomain':
+        if(CheckWitness(owner)):
+            Delete(GetContext(), domain_owner_key)
+            Delete(GetContext(), domain_target_key)
+            return True
+            
+    return False
